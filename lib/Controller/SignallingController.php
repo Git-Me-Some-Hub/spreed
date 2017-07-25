@@ -82,7 +82,8 @@ class SignallingController extends Controller {
 	 * @return JSONResponse
 	 */
 	public function signalling($messages) {
-		if ($this->config->getSignalingServer() !== '') {
+		$signaling = $this->config->getSignalingServer();
+		if (!empty($signaling)) {
 			throw new \Exception('Internal signaling disabled.');
 		}
 
@@ -128,7 +129,8 @@ class SignallingController extends Controller {
 	 * @PublicPage
 	 */
 	public function pullMessages() {
-		if ($this->config->getSignalingServer() !== '') {
+		$signaling = $this->config->getSignalingServer();
+		if (!empty($signaling)) {
 			throw new \Exception('Internal signaling disabled.');
 		}
 

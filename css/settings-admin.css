@@ -3,6 +3,6 @@
 	display: inline-block;
 }
 
-#spreed_settings_form input {
+#spreed_settings_form input, #spreed_settings_form textarea {
 	width: 300px;
 }

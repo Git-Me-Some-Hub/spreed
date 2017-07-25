@@ -104,13 +104,16 @@ class AppSettingsController extends Controller {
 		}
 		$signaling_server = trim($signaling_server);
 		if ($signaling_server !== '') {
-			if (!filter_var($signaling_server, FILTER_VALIDATE_URL)) {
-				return array('data' =>
-					array('message' =>
-						(string) $this->l10n->t('Invalid signaling server url.')
-					),
-					'status' => 'error'
-				);
+			$servers = explode('\n', $signaling_server);
+			foreach($servers as $server) {
+				if (!filter_var($server, FILTER_VALIDATE_URL)) {
+					return array('data' =>
+						array('message' =>
+							(string) $this->l10n->t('Invalid signaling server url.')
+						),
+						'status' => 'error'
+					);
+				}
 			}
 		}
 
