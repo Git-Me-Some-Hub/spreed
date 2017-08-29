@@ -342,6 +342,13 @@
 					room.set('active', room.get('token') === token);
 				});
 			}
+
+			this._messagesCollection = new OCA.SpreedMe.Models.MessageCollection({chatId: token});
+			this._messagesCollection.receiveMessages();
+			this._chatView = new OCA.SpreedMe.Views.ChatView({collection: this._messagesCollection});
+
+			$('.tabsContainer .chat').remove();
+			$('.tabsContainer').append(this._chatView.render().$el);
 		},
 		addParticipantToRoom: function(token, participant) {
 			$.post(
