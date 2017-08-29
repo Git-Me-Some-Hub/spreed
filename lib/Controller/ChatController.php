@@ -108,8 +108,19 @@ class ChatController extends OCSController {
 
 		// TODO
 
+		// TODO ignore everything below, it is just a quick hack to send random
+		// messages and test the UI.
+		$waitTime = rand(1, 10);
+
+		sleep($waitTime);
+
+		$participants = $room->getParticipants();
+
+		// TODO sessionId needs to be used for guest users, as there is
+		// currently no way to identify them otherwise. This should be taken
+		// into account in the API and in the front-end.
 		return new DataResponse([
-			[ 'id' => 0, 'userId' => 0, 'timestamp' => 0, 'message' => '' ]
+			[ 'id' => time(), 'userId' => array_keys($participants['users'])[rand(0, count($participants) - 1)], 'timestamp' => time() * 1000, 'message' => "Message delayed by $waitTime seconds" ]
 		]);
 	}
 
