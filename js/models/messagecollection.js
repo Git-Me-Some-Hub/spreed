@@ -45,6 +45,10 @@
 		parse: function(result) {
 			return result.ocs.data;
 		},
+
+		receiveMessages: function() {
+			this.fetch({remove: false, success: _.bind(this.receiveMessages, this), error: _.bind(this.receiveMessages, this)});
+		}
 	});
 
 	OCA.SpreedMe.Models.MessageCollection = MessageCollection;
