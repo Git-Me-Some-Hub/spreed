@@ -29,6 +29,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\Security\ISecureRandom;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\GenericEvent;
 
 class Room {
 	const ONE_TO_ONE_CALL = 1;
@@ -39,6 +41,8 @@ class Room {
 	private $db;
 	/** @var ISecureRandom */
 	private $secureRandom;
+	/** @var EventDispatcherInterface */
+	private $dispatcher;
 
 	/** @var int */
 	private $id;
@@ -59,12 +63,14 @@ class Room {
 	 *
 	 * @param IDBConnection $db
 	 * @param ISecureRandom $secureRandom
+	 * @param EventDispatcherInterface $dispatcher
 	 * @param int $id
 	 * @param int $type
 	 * @param string $token
 	 * @param string $name
 	 */
-	public function __construct(IDBConnection $db, ISecureRandom $secureRandom, $id, $type, $token, $name) {
+	public function __construct(IDBConnection $db, ISecureRandom $secureRandom, EventDispatcherInterface $dispatcher, $id, $type, $token, $name) {
+		$this->dispatcher = $dispatcher;
 		$this->db = $db;
 		$this->secureRandom = $secureRandom;
 		$this->id = $id;
@@ -146,6 +152,8 @@ class Room {
 	}
 
 	public function deleteRoom() {
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::preDeleteRoom',
+			new GenericEvent($this));
 		$query = $this->db->getQueryBuilder();
 
 		// Delete all participants
@@ -157,6 +165,8 @@ class Room {
 		$query->delete('spreedme_rooms')
 			->where($query->expr()->eq('id', $query->createNamedParameter($this->getId(), IQueryBuilder::PARAM_INT)));
 		$query->execute();
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::postDeleteRoom',
+			new GenericEvent($this));
 	}
 
 	/**
@@ -164,7 +174,8 @@ class Room {
 	 * @return bool True when the change was valid, false otherwise
 	 */
 	public function setName($newName) {
-		if ($newName === $this->getName()) {
+		$oldName = $this->getName();
+		if ($newName === $oldName) {
 			return true;
 		}
 
@@ -172,6 +183,11 @@ class Room {
 			return false;
 		}
 
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::preSetName',
+			new GenericEvent($this, [
+				'newName' => $newName,
+				'oldName' => $oldName,
+			]));
 		$query = $this->db->getQueryBuilder();
 		$query->update('spreedme_rooms')
 			->set('name', $query->createNamedParameter($newName))
@@ -179,6 +195,11 @@ class Room {
 		$query->execute();
 		$this->name = $newName;
 
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::postSetName',
+			new GenericEvent($this, [
+				'newName' => $newName,
+				'oldName' => $oldName,
+			]));
 		return true;
 	}
 
@@ -187,6 +208,7 @@ class Room {
 	 * @return bool True when the change was valid, false otherwise
 	 */
 	public function changeType($newType) {
+		$newType = (int) $newType;
 		if ($newType === $this->getType()) {
 			return true;
 		}
@@ -197,13 +219,18 @@ class Room {
 
 		$oldType = $this->getType();
 
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::preChangeType',
+			new GenericEvent($this, [
+				'newType' => $newType,
+				'oldType' => $oldType,
+			]));
 		$query = $this->db->getQueryBuilder();
 		$query->update('spreedme_rooms')
 			->set('type', $query->createNamedParameter($newType, IQueryBuilder::PARAM_INT))
 			->where($query->expr()->eq('id', $query->createNamedParameter($this->getId(), IQueryBuilder::PARAM_INT)));
 		$query->execute();
 
-		$this->type = (int) $newType;
+		$this->type = $newType;
 
 		if ($oldType === Room::PUBLIC_CALL) {
 			// Kick all guests and users that were not invited
@@ -214,6 +241,11 @@ class Room {
 			$query->execute();
 		}
 
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::postChangeType',
+			new GenericEvent($this, [
+				'newType' => $newType,
+				'oldType' => $oldType,
+			]));
 		return true;
 	}
 
@@ -221,27 +253,42 @@ class Room {
 	 * @param IUser $user
 	 */
 	public function addUser(IUser $user) {
-		$this->addParticipant($user->getUID(), Participant::USER);
+		$this->addParticipants([$user->getUID()], Participant::USER);
 	}
 
 	/**
-	 * @param string $participant
+	 * @param string[] $participants
 	 * @param int $participantType
 	 * @param string $sessionId
 	 */
-	public function addParticipant($participant, $participantType, $sessionId = '0') {
-		$query = $this->db->getQueryBuilder();
-		$query->insert('spreedme_room_participants')
-			->values(
-				[
-					'userId' => $query->createNamedParameter($participant),
-					'roomId' => $query->createNamedParameter($this->getId()),
-					'lastPing' => $query->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'sessionId' => $query->createNamedParameter($sessionId),
-					'participantType' => $query->createNamedParameter($participantType, IQueryBuilder::PARAM_INT),
-				]
-			);
-		$query->execute();
+	public function addParticipants($participants, $participantType, $sessionId = '0') {
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::preAddParticipants',
+			new GenericEvent($this, [
+				'participants' => $participants,
+				'type' => $participantType,
+				'sessionId' => $sessionId,
+			]));
+		foreach ($participants as &$participant) {
+			$query = $this->db->getQueryBuilder();
+			$query->insert('spreedme_room_participants')
+				->values(
+					[
+						'userId' => $query->createNamedParameter($participant),
+						'roomId' => $query->createNamedParameter($this->getId()),
+						'lastPing' => $query->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+						'sessionId' => $query->createNamedParameter($sessionId),
+						'participantType' => $query->createNamedParameter($participantType, IQueryBuilder::PARAM_INT),
+					]
+				);
+			$query->execute();
+		}
+
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::postAddParticipants',
+			new GenericEvent($this, [
+				'participants' => $participants,
+				'type' => $participantType,
+				'sessionId' => $sessionId,
+			]));
 	}
 
 	/**
@@ -261,11 +308,19 @@ class Room {
 	 * @param IUser $user
 	 */
 	public function removeUser(IUser $user) {
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::preRemoveUser',
+			new GenericEvent($this, [
+				'user' => $user,
+			]));
 		$query = $this->db->getQueryBuilder();
 		$query->delete('spreedme_room_participants')
 			->where($query->expr()->eq('roomId', $query->createNamedParameter($this->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($query->expr()->eq('userId', $query->createNamedParameter($user->getUID())));
 		$query->execute();
+		$this->dispatcher->dispatch('\OCA\Spreed\Room::postRemoveUser',
+			new GenericEvent($this, [
+				'user' => $user,
+			]));
 	}
 
 	/**
@@ -285,7 +340,7 @@ class Room {
 
 		if ($result === 0) {
 			// User joining a public room, without being invited
-			$this->addParticipant($userId, Participant::USER_SELF_JOINED, $sessionId);
+			$this->addParticipants([$userId], Participant::USER_SELF_JOINED, $sessionId);
 		}
 
 		while (!$this->isSessionUnique($sessionId)) {

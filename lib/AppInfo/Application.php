@@ -21,12 +21,38 @@
 
 namespace OCA\Spreed\AppInfo;
 
+use OCA\Spreed\BackendNotifier;
 use OCP\AppFramework\App;
 
 class Application extends App {
 
 	public function __construct(array $urlParams = []) {
 		parent::__construct('spreed', $urlParams);
+	}
+
+	public function registerHooks() {
+		$notifier = $this->getContainer()->query(BackendNotifier::class);
+
+		$dispatcher = $this->getContainer()->getServer()->getEventDispatcher();
+		$dispatcher->addListener('\OCA\Spreed\Room::postAddParticipants', function($event) use ($notifier) {
+
+			$room = $event->getSubject();
+			$participants= $event->getArgument('participants');
+			$notifier->roomInvited($room, $participants);
+		});
+		$dispatcher->addListener('\OCA\Spreed\Room::postSetName', function($event) use ($notifier) {
+			$room = $event->getSubject();
+			$notifier->roomModified($room);
+		});
+		$dispatcher->addListener('\OCA\Spreed\Room::preDeleteRoom', function($event) use ($notifier) {
+			$room = $event->getSubject();
+			$notifier->roomDeleted($room);
+		});
+		$dispatcher->addListener('\OCA\Spreed\Room::postRemoveUser', function($event) use ($notifier) {
+			$room = $event->getSubject();
+			$user = $event->getArgument('user');
+			$notifier->roomsDisinvited($room, [$user->getUID()]);
+		});
 	}
 
 }
