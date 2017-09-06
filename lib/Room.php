@@ -152,7 +152,7 @@ class Room {
 	}
 
 	public function deleteRoom() {
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::preDeleteRoom',
+		$this->dispatcher->dispatch(self::class . '::preDeleteRoom',
 			new GenericEvent($this));
 		$query = $this->db->getQueryBuilder();
 
@@ -165,7 +165,7 @@ class Room {
 		$query->delete('spreedme_rooms')
 			->where($query->expr()->eq('id', $query->createNamedParameter($this->getId(), IQueryBuilder::PARAM_INT)));
 		$query->execute();
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::postDeleteRoom',
+		$this->dispatcher->dispatch(self::class . '::postDeleteRoom',
 			new GenericEvent($this));
 	}
 
@@ -183,7 +183,7 @@ class Room {
 			return false;
 		}
 
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::preSetName',
+		$this->dispatcher->dispatch(self::class . '::preSetName',
 			new GenericEvent($this, [
 				'newName' => $newName,
 				'oldName' => $oldName,
@@ -195,7 +195,7 @@ class Room {
 		$query->execute();
 		$this->name = $newName;
 
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::postSetName',
+		$this->dispatcher->dispatch(self::class . '::postSetName',
 			new GenericEvent($this, [
 				'newName' => $newName,
 				'oldName' => $oldName,
@@ -219,7 +219,7 @@ class Room {
 
 		$oldType = $this->getType();
 
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::preChangeType',
+		$this->dispatcher->dispatch(self::class . '::preChangeType',
 			new GenericEvent($this, [
 				'newType' => $newType,
 				'oldType' => $oldType,
@@ -241,7 +241,7 @@ class Room {
 			$query->execute();
 		}
 
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::postChangeType',
+		$this->dispatcher->dispatch(self::class . '::postChangeType',
 			new GenericEvent($this, [
 				'newType' => $newType,
 				'oldType' => $oldType,
@@ -262,7 +262,7 @@ class Room {
 	 * @param string $sessionId
 	 */
 	public function addParticipants($participants, $participantType, $sessionId = '0') {
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::preAddParticipants',
+		$this->dispatcher->dispatch(self::class . '::preAddParticipants',
 			new GenericEvent($this, [
 				'participants' => $participants,
 				'type' => $participantType,
@@ -283,7 +283,7 @@ class Room {
 			$query->execute();
 		}
 
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::postAddParticipants',
+		$this->dispatcher->dispatch(self::class . '::postAddParticipants',
 			new GenericEvent($this, [
 				'participants' => $participants,
 				'type' => $participantType,
@@ -308,7 +308,7 @@ class Room {
 	 * @param IUser $user
 	 */
 	public function removeUser(IUser $user) {
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::preRemoveUser',
+		$this->dispatcher->dispatch(self::class . '::preRemoveUser',
 			new GenericEvent($this, [
 				'user' => $user,
 			]));
@@ -317,7 +317,7 @@ class Room {
 			->where($query->expr()->eq('roomId', $query->createNamedParameter($this->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($query->expr()->eq('userId', $query->createNamedParameter($user->getUID())));
 		$query->execute();
-		$this->dispatcher->dispatch('\OCA\Spreed\Room::postRemoveUser',
+		$this->dispatcher->dispatch(self::class . '::postRemoveUser',
 			new GenericEvent($this, [
 				'user' => $user,
 			]));
