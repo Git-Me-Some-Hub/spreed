@@ -144,10 +144,7 @@ class AppSettingsController extends Controller {
 		}
 
 		$currentSignalingSkipVerifyCert = $this->config->getAppValue('spreed', 'signaling_skip_verify_cert', '');
-		if ($signaling_skip_verify_cert === null) {
-			$signaling_skip_verify_cert = '';
-		}
-		if ( $currentSignalingSkipVerifyCert !== $signaling_skip_verify_cert ) {
+		if ( $currentSignalingSkipVerifyCert !== (string) $signaling_skip_verify_cert ) {
 			$this->config->setAppValue('spreed', 'signaling_skip_verify_cert', $signaling_skip_verify_cert);
 		}
 
