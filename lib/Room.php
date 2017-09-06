@@ -268,18 +268,19 @@ class Room {
 				'type' => $participantType,
 				'sessionId' => $sessionId,
 			]));
-		foreach ($participants as &$participant) {
-			$query = $this->db->getQueryBuilder();
-			$query->insert('spreedme_room_participants')
-				->values(
-					[
-						'userId' => $query->createNamedParameter($participant),
-						'roomId' => $query->createNamedParameter($this->getId()),
-						'lastPing' => $query->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-						'sessionId' => $query->createNamedParameter($sessionId),
-						'participantType' => $query->createNamedParameter($participantType, IQueryBuilder::PARAM_INT),
-					]
-				);
+		$query = $this->db->getQueryBuilder();
+		$query->insert('spreedme_room_participants')
+			->values(
+				[
+					'userId' => $query->createParameter('participant'),
+					'roomId' => $query->createNamedParameter($this->getId()),
+					'lastPing' => $query->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+					'sessionId' => $query->createNamedParameter($sessionId),
+					'participantType' => $query->createNamedParameter($participantType, IQueryBuilder::PARAM_INT),
+				]
+			);
+		foreach ($participants as $participant) {
+			$query->setParameter('participant', $participant);
 			$query->execute();
 		}
 
