@@ -28,6 +28,7 @@ use OCA\Spreed\Exceptions\RoomNotFoundException;
 use OCA\Spreed\Manager;
 use OCA\Spreed\Room;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -84,7 +85,7 @@ class SignallingController extends Controller {
 	public function signalling($messages) {
 		$signaling = $this->config->getSignalingServer();
 		if (!empty($signaling)) {
-			throw new \Exception('Internal signaling disabled.');
+			return new JSONResponse('Internal signaling disabled.', Http::STATUS_BAD_REQUEST);
 		}
 
 		$response = [];
@@ -131,7 +132,7 @@ class SignallingController extends Controller {
 	public function pullMessages() {
 		$signaling = $this->config->getSignalingServer();
 		if (!empty($signaling)) {
-			throw new \Exception('Internal signaling disabled.');
+			return new JSONResponse('Internal signaling disabled.', Http::STATUS_BAD_REQUEST);
 		}
 
 		set_time_limit(0);
