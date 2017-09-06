@@ -55,9 +55,10 @@ class AppSettingsController extends Controller {
 	 * @param string $stun_server
 	 * @param string $turn_server
 	 * @param string $turn_server_secret
+	 * @param string $turn_server_protocols
 	 * @param string $signaling_server
-	 * @param string $signaling_secret
 	 * @param string $signaling_skip_verify_cert
+	 * @param string $signaling_secret
 	 */
 	public function setSpreedSettings($stun_server, $turn_server, $turn_server_secret, $turn_server_protocols, $signaling_server, $signaling_skip_verify_cert, $signaling_secret) {
 		$stun_server = trim($stun_server);
