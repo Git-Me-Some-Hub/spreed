@@ -297,12 +297,22 @@ class Room {
 	 * @param int $participantType
 	 */
 	public function setParticipantType($participant, $participantType) {
+		$this->dispatcher->dispatch(self::class . '::preSetParticipantType',
+			new GenericEvent($this, [
+				'participant' => $participant,
+				'type' => $participantType,
+			]));
 		$query = $this->db->getQueryBuilder();
 		$query->update('spreedme_room_participants')
 			->set('participantType', $query->createNamedParameter($participantType, IQueryBuilder::PARAM_INT))
 			->where($query->expr()->eq('roomId', $query->createNamedParameter($this->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($query->expr()->eq('userId', $query->createNamedParameter($participant)));
 		$query->execute();
+		$this->dispatcher->dispatch(self::class . '::postSetParticipantType',
+			new GenericEvent($this, [
+				'participant' => $participant,
+				'type' => $participantType,
+			]));
 	}
 
 	/**
